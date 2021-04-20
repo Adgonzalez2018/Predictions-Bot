@@ -22,7 +22,7 @@ The bot will constantly check if someone is in the voice channel and give them i
 - $points --> Displays your points (Automatically starts with 1000)
 
 # Dependencies
--import time
+- import time
 - from discord.ext import commands
 - from discord.ext.commands import has_permissions, MissingPermissions
 - from threading import Timer
