@@ -3,10 +3,10 @@ A Discord Predictions bot that is similar to twitch predictions, allowing admini
 
 ## How it works
 
-# Predictions
+### Predictions
 People's points are put into a dictionary for a temporary time until a winner is decided. After a winner is decided a function gets the loser's money and divides it up by percentages of the winner's pool. For example, the person who puts in 8000 poitns will get more points than someone who puts in 1000 points. If your side wins you will also get your points back + your percentage of the cut.
 
-# Points over time
+### Points over time
 The bot will constantly check if someone is in the voice channel and give them increment their amount with a random range of 90-125 points. Eventually I want to add a MEE6 like leveling system with messages. Unfortunately I would have to make a custom cooldown for Command Listener. 
 
 # Commands = '$'
