@@ -1,13 +1,13 @@
 # Predictions-Bot
-A Discord Predictions bot that is similar to twitch predictions, allowing administrators of the discord server to set up bets with fake points accrued by being active in the voice channel. The points obtained over time will be collected to a database on mongoDB. 
+  A Discord Predictions bot that is similar to twitch predictions, allowing administrators of the discord server to set up bets with fake points accrued by being active in the voice channel. The points obtained over time will be collected to a database on mongoDB. 
 
 ## How it works
 
 ### Predictions
-People's points are put into a dictionary for a temporary time until a winner is decided. After a winner is decided a function gets the loser's money and divides it up by percentages of the winner's pool. For example, the person who puts in 8000 poitns will get more points than someone who puts in 1000 points. If your side wins you will also get your points back + your percentage of the cut.
+  People's points are put into a dictionary for a temporary time until a winner is decided. After a winner is decided a function gets the loser's money and divides it up by percentages of the winner's pool. For example, the person who puts in 8000 poitns will get more points than someone who puts in 1000 points. If your side wins you will also get your points back + your percentage of the cut.
 
 ### Points over time
-The bot will constantly check if someone is in the voice channel and give them increment their amount with a random range of 90-125 points. Eventually I want to add a MEE6 like leveling system with messages. Unfortunately I would have to make a custom cooldown for Command Listener. 
+  The bot will constantly check if someone is in the voice channel and give them increment their amount with a random range of 90-125 points. Eventually I want to add a MEE6 like leveling system with messages. Unfortunately I would have to make a custom cooldown for Command Listener. 
 
 # Commands = '$'
 ## Administrators Only
