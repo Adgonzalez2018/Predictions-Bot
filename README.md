@@ -17,6 +17,9 @@
 
 - `$refund` --> Resets the Prediction and gives back peoples points.
 - `$won` --> Params: "Which side one". Sends a message with the percentages of both sides, biggest payout and amount of people on side.
+
+![Imageo of Winner Text](https://cdn.discordapp.com/attachments/744656857226018905/833857915894628352/unknown.png)
+
 - `$give/take` --> Param: "member.name", (amount). Allows admins to give/take points from members.  
 
 ## Regular Members
