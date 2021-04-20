@@ -17,7 +17,7 @@
 - $give/take --> Param: "member.name", (amount). Allows admins to give/take points from members.  
 
 ## Regular Members
-- $beleive --> Param: (Amount). This bets on the "believe" side 
+- `<$believe>` --> Param: (Amount). This bets on the "believe" side 
 - $doubt --> Param: (Amount). This bets on the "doubt" side
 - $points --> Displays your points (Automatically starts with 1000)
 
