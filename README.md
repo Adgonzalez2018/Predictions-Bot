@@ -12,8 +12,9 @@
 # Commands = '$'
 ## Administrators Only
 - `$Start` --> Params: "Title", "Time (s)", "believe side", "doubt side". Sets the prediction and sends a display/text to show sides and you can only bet within the given time.
-![Image of Start Text]
-(https://cdn.discordapp.com/attachments/744656857226018905/833857121305100288/Capture.PNG)
+
+![Image of Start Text](https://cdn.discordapp.com/attachments/744656857226018905/833857121305100288/Capture.PNG)
+
 - `$refund` --> Resets the Prediction and gives back peoples points.
 - `$won` --> Params: "Which side one". Sends a message with the percentages of both sides, biggest payout and amount of people on side.
 - `$give/take` --> Param: "member.name", (amount). Allows admins to give/take points from members.  
