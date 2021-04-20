@@ -11,15 +11,15 @@
 
 # Commands = '$'
 ## Administrators Only
-- $start --> Params: "Title", "Time (s)", "believe side", "doubt side". Sets the prediction and sends a display/text to show sides and you can only bet within the given time.
-- $refund --> Resets the Prediction and gives back peoples points.
-- $won --> Params: "Which side one". Sends a message with the percentages of both sides, biggest payout and amount of people on side.
-- $give/take --> Param: "member.name", (amount). Allows admins to give/take points from members.  
+- `$Start` --> Params: "Title", "Time (s)", "believe side", "doubt side". Sets the prediction and sends a display/text to show sides and you can only bet within the given time.
+- `$refund` --> Resets the Prediction and gives back peoples points.
+- `$won` --> Params: "Which side one". Sends a message with the percentages of both sides, biggest payout and amount of people on side.
+- `$give/take` --> Param: "member.name", (amount). Allows admins to give/take points from members.  
 
 ## Regular Members
-- `<$believe>` --> Param: (Amount). This bets on the "believe" side 
-- $doubt --> Param: (Amount). This bets on the "doubt" side
-- $points --> Displays your points (Automatically starts with 1000)
+- `$believe` --> Param: (Amount). This bets on the "believe" side 
+- `$doubt` --> Param: (Amount). This bets on the "doubt" side
+- `$points` --> Displays your points (Automatically starts with 1000)
 
 # Dependencies
 - import time
