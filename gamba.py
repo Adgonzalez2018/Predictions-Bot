@@ -311,9 +311,3 @@ class Points(commands.Cog):
 
 bot = Bot()
 bot.run(TOKEN)
-
-"""
-So you have to subtract points from the database idk how you want to do that, i was thinking after the if else statement, and then add the points from the winner pool to the DB in the giveAmountWon Func 
-also have to change the add points from vc channels
-and the transactions cog i.e. give/take commands
-"""
