@@ -95,6 +95,13 @@ def showPoints(post):
     for i in post:
         return i["points"]
 
+
+def removeSpace(string):
+    newString = string.replace(" ", "")
+    return newString
+
+
+
 '''
     async def closeSubmissions(self):
         now = datetime.datetime.now()
