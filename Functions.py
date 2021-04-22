@@ -2,8 +2,14 @@ import math
 import datetime
 
 
+# whenever a user bets it sends this text I just added the semantics part just in case someone already had bet
 def userInputPts(user, amount, blvPercent, dbtPercent, side, globalDict, believePool, doubtPool):
-    text = f"{user} has entered the pool with **{amount} points! on \"{globalDict[side]}\"** <:Pog:602691798498017302> \n" \
+    global semantics
+    if user in believePool or user in doubtPool:
+        semantics = "added"
+    else:
+        semantics = "entered"
+    text = f"{user} has {semantics} the pool with **{amount} points! on \"{globalDict[side]}\"** <:Pog:602691798498017302> \n" \
            f"```autohotkey\n" \
            f"Total Pool: {globalDict['Total']} points\n" \
            f"Blv Percent/People/Amount: {blvPercent}%, {len(believePool)}, {sum(believePool.values())}\n" \
@@ -11,6 +17,7 @@ def userInputPts(user, amount, blvPercent, dbtPercent, side, globalDict, believe
     return text
 
 
+# for $start command text
 def startText(title, blv, dbt, timer):
     text = f"> Prediction Started: **{title}?** Time Left: **{timer}**\n" \
            f"```bash\n" \
@@ -20,6 +27,8 @@ def startText(title, blv, dbt, timer):
     return text
 
 
+# there are a lot of values to be summoned for the win command so I decided to make a function for a one liner
+# makes it simpler
 def returnValues(globalDict, believePool, doubtPool):
     pool, title = globalDict['Total'], globalDict['title']
     blv, dbt = globalDict['blv'], globalDict['dbt']
@@ -27,6 +36,8 @@ def returnValues(globalDict, believePool, doubtPool):
     return pool, title, blv, dbt, blvSum, dbtSum
 
 
+# i just want to say this looks so nice it looks like a block
+# gets the percentages of the pool and returns their values
 def percentage(believePool, doubtPool, globalDict):
     blv = sum(believePool.values())
     dbt = sum(doubtPool.values())
@@ -38,12 +49,14 @@ def percentage(believePool, doubtPool, globalDict):
     return blvPercent, dbtPercent
 
 
+# different from refund as it doesn't give back points from dict to DB it transfers to winner users
 def resetAfterWin(globalDict, believePool, doubtPool):
     globalDict.clear()
     believePool.clear()
     doubtPool.clear()
 
 
+# shows title result percentages, biggest payout
 def returnWinText(title, Result, blvPercent, dbtPercent, side, believePool, doubtPool):
     global winner, maxVal, biggestWinner
     if side == 'blv':
@@ -65,6 +78,7 @@ def returnWinText(title, Result, blvPercent, dbtPercent, side, believePool, doub
     return winnerText
 
 
+# unused function
 def giveEndTime(globalDict):
     addTime = globalDict['Time']
     now = datetime.datetime.now()
@@ -72,6 +86,7 @@ def giveEndTime(globalDict):
     return endTime
 
 
+# basically whenever tries to place a bet it first checks if its past the timer or not, if not then their bets are placed
 def timeCheck(globalDict):
     now = datetime.datetime.now()
     endTime = giveEndTime(globalDict)
@@ -81,6 +96,7 @@ def timeCheck(globalDict):
         return endTime
 
 
+# i want to use this command whenever the timer has ended
 def endText(globalDict, believePool, doubtPool):
     blvPercent, dbtPercent = percentage(globalDict, believePool, doubtPool)
     text = f"> Submissions Closed!: **{globalDict['title']}?**" \
@@ -91,11 +107,13 @@ def endText(globalDict, believePool, doubtPool):
     return text
 
 
+# finds the post attribute and just returns the value
 def showPoints(post):
     for i in post:
         return i["points"]
 
 
+# used to find the database for guild since some guilds might have spaces in them
 def removeSpace(string):
     newString = string.replace(" ", "")
     return newString

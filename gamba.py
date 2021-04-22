@@ -17,14 +17,21 @@ startComDescription = "If the title/blv/dbt is more than one word use \"\". t is
 giveComDescription = "Gives points to specific member, you have to type their discord NAME (Only admins can use)."
 refundComDescription = "Refunds points and stops prediction (Only admins can use)."
 wonComDescription = "Sets win after a prediction has started, side = \"blv\" or \"dbt\" (Only admins can use)."
-
 TOKEN, GUILD, CHANNEL1, CHANNEL2, CHANNEL3 = os.getenv("Token"), os.getenv("Guild"), os.getenv("Channel1"), os.getenv("Channel2"), os.getenv("Channel3")
 CLUSTER_LINK, CLUSTER_ELEMENT, DB_ELEMENT = os.getenv("ClusterLink"), os.getenv("PointsData"), os.getenv("UserPoints")
 cluster = MongoClient(CLUSTER_LINK)
 
+####################################
+# Functions that can't be exported #
+####################################
+'''
+lists all the guilds that the bot is in and then checks to see if the guild is a database
+if it isn't it gets all members using get_members(new Guild, new collection for new Guild)
+only reason why it isn't just one DB is because I was getting dup errors for it but I actually fixed that bug
+'''
 
-# Functions that can't be exported
-def AddGuild():
+
+def addGuild():
     global posts
     guilds = bot.guilds
     dbList = cluster.list_database_names()
@@ -41,6 +48,12 @@ def AddGuild():
             pass
 
 
+'''
+Whenever a command that uses points is called it has to find the specific user's guild and returns the db and collection
+I'm not sure if I need to return the database though.
+'''
+
+
 def findTheirGuild(guildName):
     newGuildNameStr = Functions.removeSpace(guildName)
     if newGuildNameStr in bot.dbList:
@@ -51,6 +64,7 @@ def findTheirGuild(guildName):
         pass
 
 
+# this just gets a list of all the guilds but actually makes it usable to find it in mongoDB
 def listGuild():
     guilds = bot.guilds
     for guild in guilds:
@@ -58,23 +72,38 @@ def listGuild():
         bot.dbList.append(guildCutSpace)
     return bot.dbList
 
+
+'''
+this function is threaded and runs ever 30 minutes, you can change the interval to whatever you want
+has to be in seconds though. I haven't fixed it yet to do it for all guids, it currently only does it for one guild
+with the given channels. You could copy/paste per channel for each server but that's lame :/
+'''
+
+
 # STILL NEED TO FIX THIS FUNCTION
 def addPts():
     vc1, vc2 = bot.get_channel(id=CHANNEL1), bot.get_channel(id=CHANNEL2)
     if len(vc1.members) > 0:
         for person in vc1.members:
             points = random.randint(90, 125)
-            userPoints = Functions.showPoints(bot.Collection.find({"name": person.name}))
-            bot.Collection.update_one({"name": person.name}, {"$set": {"points": userPoints + points}})
+            userPoints = Functions.showPoints(bot.betCollection.find({"name": person.name}))
+            bot.betCollection.update_one({"name": person.name}, {"$set": {"points": userPoints + points}})
     else:
         pass
     if len(vc2.members) > 0:
         for person in vc2.members:
             points = random.randint(90, 125)
-            userPoints = Functions.showPoints(bot.Collection.find({"name": person.name}))
-            bot.Collection.update_one({"name": person.name}, {"$set": {"points": userPoints + points}})
+            userPoints = Functions.showPoints(bot.betCollection.find({"name": person.name}))
+            bot.betCollection.update_one({"name": person.name}, {"$set": {"points": userPoints + points}})
     else:
         pass
+
+
+'''
+These functions below are used only for refunding, 
+just takes back the points from the dict and adds them back to DB
+and then resetAllDicts() calls the latter function and clears all dicts afterwards
+'''
 
 
 def resetAllDicts():
@@ -86,12 +115,18 @@ def resetAllDicts():
 
 def refund_dicts():
     for k, v in believePool.items():
-        userPoints = Functions.showPoints(bot.Collection.find({"name": k}))
-        bot.Collection.update_one({"name": k}, {"$set": {"points": userPoints + v}})
+        userPoints = Functions.showPoints(bot.betCollection.find({"name": k}))
+        bot.betCollection.update_one({"name": k}, {"$set": {"points": userPoints + v}})
 
     for k, v in doubtPool.items():
-        userPoints = Functions.showPoints(bot.Collection.find({"name": k}))
-        bot.Collection.update_one({"name": k}, {"$set": {"points": userPoints + v}})
+        userPoints = Functions.showPoints(bot.betCollection.find({"name": k}))
+        bot.betCollection.update_one({"name": k}, {"$set": {"points": userPoints + v}})
+
+
+''' 
+Used for mongoDB which assigns their id name and gives them at least 1000 points, this can be changed
+if you want to only assign them their name and increase the amount of points.
+'''
 
 
 def get_members(guild, guildCollection):
@@ -101,15 +136,24 @@ def get_members(guild, guildCollection):
         guildCollection.insert_one(person)
 
 
+'''
+After every win it calls the bot collection that was set during $start command and gives the user's percentage of the pool + their own amount that they put in.
+Note: I believe that there is some point loss overall since their points are truncated, you don't have to use math.
+If you want you can just give them any decimal/leftover points, 
+but if you want displays to look nice you should format strings involving nums. Do whatever you want with that though I just think its easier this way.
+and take into consideration the percentages too if you do.
+'''
+
+
 def giveAmountWon(loserPool, winnerPool):
     loserSum = sum(loserPool.values())
     winnerSum = sum(winnerPool.values())
     for k, v in winnerPool.items():
-        userPoints = Functions.showPoints(bot.Collection.find({"name": k}))
+        userPoints = Functions.showPoints(bot.betCollection.find({"name": k}))
         x = v / winnerSum
         amount = x * loserSum + v
         amount = math.trunc(amount)
-        bot.Collection.update_one({"name": k}, {"$set": {"points": userPoints + amount}})
+        bot.betCollection.update_one({"name": k}, {"$set": {"points": userPoints + amount}})
         winnerPool[k] = amount
 
 
@@ -117,19 +161,25 @@ class Bot(commands.Bot):
     def __init__(self):
         super(Bot, self).__init__(command_prefix=['$'], intents=intents, case_insensitive=True)
         self.blvPercent, self.dbtPercent, self._last_member = None, None, None
-        self.predictionDB, self.Collection = None, None
+        self.predictionDB, self.betCollection = None, None
         self.dbList = []
         self.add_cog(Predictions(self))
         self.add_cog(Points(self))
 
     async def on_ready(self):
         print(f'Bot has logged in as {bot.user}')
-        AddGuild()
+        addGuild()
         this = Timer(1800, addPts)
         this.start()
         bot.dbList = listGuild()
 
+    @commands.Cog.listener()
+    async def on_guild_join(self):
+        addGuild()
+        pass
 
+
+# ALL THE COMMANDS THAT ARE USED FOR PREDICTIONS LIKE STARTING THE BET, BETTING, AND REFUNDING
 class Predictions(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -138,7 +188,7 @@ class Predictions(commands.Cog):
     @commands.command(aliases=['set'], description=startComDescription)
     @has_permissions(manage_roles=True, ban_members=True)
     async def start(self, ctx, title, t: int, blv, dbt):
-        bot.predictionDB, bot.Collection = findTheirGuild(ctx.author.guild.name)
+        bot.predictionDB, bot.betCollection = findTheirGuild(ctx.author.guild.name)
         globalDict['blv'], globalDict['dbt'] = blv, dbt
         globalDict['title'], globalDict['Total'], globalDict['Time'] = title, 0, t
         minutes, secs = divmod(t, 60)
@@ -160,10 +210,13 @@ class Predictions(commands.Cog):
             text = f"Sorry {ctx.message.author.mention}, you do not have permissions to do that! <:davidCD:805202027848007770>"
             await ctx.send(ctx.message.channel, text)
 
+    # bets on believe
+    # another thing to note is that if you bet on dbt, you can't bet blv or if you have no points you aren't allowed to bet
+    # it also adds to your previous amount if you have previously bet on this side
     @commands.command(aliases=['believe', 'blv'])
     async def betBelieve(self, ctx, amount: int):
         user, userMention = ctx.message.author.name, ctx.message.author.mention
-        userDB = bot.Collection.find({"name": user})
+        userDB = bot.betCollection.find({"name": user})
         userPoints = Functions.showPoints(userDB)
         if isinstance(Functions.timeCheck(globalDict), bool):
             userPoints -= amount
@@ -183,7 +236,7 @@ class Predictions(commands.Cog):
                 blvPercent, dbtPercent = Functions.percentage(believePool, doubtPool, globalDict)
                 text = Functions.userInputPts(userMention, amount, blvPercent, dbtPercent, 'blv', globalDict,
                                               believePool, doubtPool)
-                bot.Collection.update_one({"name": user}, {"$set": {"points": userPoints}})
+                bot.betCollection.update_one({"name": user}, {"$set": {"points": userPoints}})
                 await ctx.send(text)
                 pass
             else:
@@ -192,7 +245,7 @@ class Predictions(commands.Cog):
                 blvPercent, dbtPercent = Functions.percentage(believePool, doubtPool, globalDict)
                 text = Functions.userInputPts(userMention, amount, blvPercent, dbtPercent, 'blv', globalDict,
                                               believePool, doubtPool)
-                bot.Collection.update_one({"name": user}, {"$set": {"points": userPoints}})
+                bot.betCollection.update_one({"name": user}, {"$set": {"points": userPoints}})
                 await ctx.send(text)
                 pass
             pass
@@ -201,10 +254,13 @@ class Predictions(commands.Cog):
             await ctx.send(text)
             pass
 
+    # bets on doubt side
+    # another thing to note is that if you bet on blv you can't bet dbt or if you have no points you aren't allowed to bet
+    # it also adds to your previous amount if you have previously bet on this side
     @commands.command(aliases=['doubt', 'dbt'])
     async def betDoubt(self, ctx, amount: int):
         user, userMention = ctx.message.author.name, ctx.message.author.mention
-        userDB = bot.Collection.find({"name": user})
+        userDB = bot.betCollection.find({"name": user})
         userPoints = Functions.showPoints(userDB)
         if isinstance(Functions.timeCheck(globalDict), bool):
             userPoints -= amount
@@ -224,7 +280,7 @@ class Predictions(commands.Cog):
                 blvPercent, dbtPercent = Functions.percentage(believePool, doubtPool, globalDict)
                 text = Functions.userInputPts(userMention, amount, blvPercent, dbtPercent, 'dbt', globalDict,
                                               believePool, doubtPool)
-                bot.Collection.update_one({"name": user}, {"$set": {"points": userPoints}})
+                bot.betCollection.update_one({"name": user}, {"$set": {"points": userPoints}})
                 await ctx.send(text)
                 pass
             else:
@@ -233,7 +289,7 @@ class Predictions(commands.Cog):
                 blvPercent, dbtPercent = Functions.percentage(believePool, doubtPool, globalDict)
                 text = Functions.userInputPts(userMention, amount, blvPercent, dbtPercent, 'dbt', globalDict,
                                               believePool, doubtPool)
-                bot.Collection.update_one({"name": user}, {"$set": {"points": userPoints}})
+                bot.betCollection.update_one({"name": user}, {"$set": {"points": userPoints}})
                 await ctx.send(text)
                 pass
             pass
@@ -242,6 +298,7 @@ class Predictions(commands.Cog):
             await ctx.send(text)
             pass
 
+    # set winner command
     @commands.command(name='won', description=wonComDescription)
     @has_permissions(manage_roles=True, ban_members=True)
     async def winner(self, ctx, side: str):
@@ -284,6 +341,7 @@ class Predictions(commands.Cog):
             await ctx.send(ctx.message.channel, text)
 
 
+# this cog basically displays points, takes and gives
 class Points(commands.Cog):
     def __init__(self, bot):
         self.message = None
@@ -297,9 +355,8 @@ class Points(commands.Cog):
         bot.userDB, bot.userCollection = findTheirGuild(ctx.author.guild.name)
         thisMember = bot.userCollection.find({"name": give_Member})
         userPoints = Functions.showPoints(thisMember) + amount
-        bot.Collection.update_one({"name": give_Member}, {"$set": {"points": userPoints}})
+        bot.userCollection.update_one({"name": give_Member}, {"$set": {"points": userPoints}})
         text = f"{give_Member} you have {userPoints} points <:money:689308022660399117> <:Pog:602691798498017302>"
-        bot.userCollection, bot.userDB = None, None
         await ctx.send(text)
 
     @givePts.error
@@ -309,8 +366,8 @@ class Points(commands.Cog):
             await ctx.send(text)
             pass
 
-    @commands.command(name='take',
-                      description="Takes points from specific member, you have to type their discord NAME (Only admins can use).")
+    # I haven't actually considered if they take more than what they have so be aware of that not that important to me at the moment
+    @commands.command(name='take', description="Takes points from specific member, you have to type their discord NAME (Only admins can use).")
     @has_permissions(manage_roles=True, ban_members=True)
     async def takePts(self, ctx, take_Member: str, amount: int):
         bot.userDB, bot.userCollection = findTheirGuild(ctx.author.guild.name)
@@ -318,7 +375,6 @@ class Points(commands.Cog):
         userPoints = Functions.showPoints(thisMember) - amount
         bot.userCollection.update_one({"name": take_Member}, {"$set": {"points": userPoints}})
         text = f"{take_Member} you have {userPoints} points <:money:689308022660399117> <:FeelsBadMan:692245421170622496>"
-        bot.userCollection, bot.userDB = None, None
         await ctx.send(text)
 
     @takePts.error
@@ -335,29 +391,15 @@ class Points(commands.Cog):
         thisMember = bot.userCollection.find({"name": user})
         userPoints = Functions.showPoints(thisMember)
         text = f"{userMention} you have {userPoints} points <:money:689308022660399117>"
-        bot.userDb, bot.userCollection = None, None
         await ctx.send(text)
 
 
 bot = Bot()
 bot.run(TOKEN)
 
-
-""" if guild.name in collectionList:
-            db.create_collection(f"{guild.name}")
-            thisGuild = db[guild.name]
-            print(thisGuild)
-            for person in guild.members:
-                posts.append({"_id": person.id, "name": person.name, "points": 1000})
-            for person in posts:
-                thisGuild.insert_one(person)
-            print(db.collection_names())
-        else:
-            print(guild.name)
-            print(db.list_collection_names())
-            pass
-    print(db.list_collection_names())
-"""
+#############################
+# UNUSED FUNCTIONS/COMMANDS #
+#############################
 
 """ @commands.Cog.listener()
     @commands.has_any_role(['Lettuce', 'Top Dogs'])
