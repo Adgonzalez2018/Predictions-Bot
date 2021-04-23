@@ -4,12 +4,7 @@ import datetime
 
 # whenever a user bets it sends this text I just added the semantics part just in case someone already had bet
 def userInputPts(user, amount, blvPercent, dbtPercent, side, globalDict, believePool, doubtPool):
-    global semantics
-    if user in believePool.items() or user in doubtPool.items():
-        semantics = "added"
-    else:
-        semantics = "entered"
-    text = f"{user} has {semantics} the pool with **{amount} points! on \"{globalDict[side]}\"** <:Pog:602691798498017302> \n" \
+    text = f"{user} has added to the pool with **{amount} points! on \"{globalDict[side]}\"** <:Pog:602691798498017302> \n" \
            f"```autohotkey\n" \
            f"Total Pool: {globalDict['Total']} points\n" \
            f"Blv Percent/People/Amount: {blvPercent}%, {len(believePool)}, {sum(believePool.values())}\n" \
