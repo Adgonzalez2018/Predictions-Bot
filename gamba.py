@@ -305,14 +305,14 @@ class Predictions(commands.Cog):
     async def winner(self, ctx, side: str):
         pool, title, blv, dbt, blvSum, dbtSum = Functions.returnValues(globalDict, believePool, doubtPool)
         blvPercent, dbtPercent = Functions.percentage(believePool, doubtPool, globalDict)
-        if side == "blv" or "believe":
+        if side == "blv":
             giveAmountWon(doubtPool, believePool)
             winnerBlvText = Functions.returnWinText(title, blv, blvPercent, dbtPercent, 'blv', believePool, doubtPool)
             bot.blvPercent, bot.dbtPercent = None, None
             Functions.resetAfterWin(globalDict, believePool, doubtPool)
             await ctx.send(winnerBlvText)
             pass
-        elif side == "dbt" or "doubt":
+        elif side == "dbt":
             giveAmountWon(believePool, doubtPool)
             winnerDbtText = Functions.returnWinText(title, dbt, blvPercent, dbtPercent, 'dbt', believePool, doubtPool)
             bot.blvPercent, bot.dbtPercent = None, None
