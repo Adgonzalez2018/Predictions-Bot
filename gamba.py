@@ -8,7 +8,7 @@ from threading import Timer
 import random
 from pymongo import MongoClient
 import math
-
+import datetime
 # global vars
 intents = discord.Intents.all()
 believePool, doubtPool, globalDict, guildMember = {}, {}, {}, {}
@@ -136,6 +136,15 @@ def get_members(guild, guildCollection):
         guildCollection.insert_one(person)
 
 
+# basically whenever tries to place a bet it first checks if its past the timer or not, if not then their bets are placed
+def timeCheck():
+    now = datetime.datetime.now()
+    print(bot.endTime)
+    if now < bot.endTime:
+        return True
+    else:
+        return bot.endTime
+
 '''
 After every win it calls the bot collection that was set during $start command and gives the user's percentage of the pool + their own amount that they put in.
 Note: I believe that there is some point loss overall since their points are truncated, you don't have to use math.
@@ -160,6 +169,7 @@ def giveAmountWon(loserPool, winnerPool):
 class Bot(commands.Bot):
     def __init__(self):
         super(Bot, self).__init__(command_prefix=['$'], intents=intents, case_insensitive=True)
+        self.endTime = None
         self.blvPercent, self.dbtPercent, self._last_member = None, None, None
         self.predictionDB, self.betCollection = None, None
         self.dbList = []
@@ -191,6 +201,7 @@ class Predictions(commands.Cog):
         bot.predictionDB, bot.betCollection = findTheirGuild(ctx.author.guild.name)
         globalDict['blv'], globalDict['dbt'] = blv, dbt
         globalDict['title'], globalDict['Total'], globalDict['Time'] = title, 0, t
+        bot.endTime = datetime.datetime.now() + datetime.timedelta(seconds=t)
         minutes, secs = divmod(t, 60)
         timer = '{:02d}:{:02d}'.format(minutes, secs)
         text = Functions.startText(title, blv, dbt, timer)
@@ -215,10 +226,10 @@ class Predictions(commands.Cog):
     # it also adds to your previous amount if you have previously bet on this side
     @commands.command(aliases=['believe', 'blv'])
     async def betBelieve(self, ctx, amount: int):
-        user, userMention = ctx.message.author.name, ctx.message.author.mention
-        userDB = bot.betCollection.find({"name": user})
-        userPoints = Functions.showPoints(userDB)
-        if isinstance(Functions.timeCheck(globalDict), bool):
+        user, userMention, thisTime = ctx.message.author.name, ctx.message.author.mention, timeCheck()
+        if isinstance(thisTime, bool):
+            userDB = bot.betCollection.find({"name": user})
+            userPoints = Functions.showPoints(userDB)
             userPoints -= amount
             if user in doubtPool:
                 text = f"You've chosen your side already {userMention} <:PogO:738917913670582323>"
@@ -259,10 +270,11 @@ class Predictions(commands.Cog):
     # it also adds to your previous amount if you have previously bet on this side
     @commands.command(aliases=['doubt', 'dbt'])
     async def betDoubt(self, ctx, amount: int):
-        user, userMention = ctx.message.author.name, ctx.message.author.mention
-        userDB = bot.betCollection.find({"name": user})
-        userPoints = Functions.showPoints(userDB)
-        if isinstance(Functions.timeCheck(globalDict), bool):
+        user, userMention, thisTime = ctx.message.author.name, ctx.message.author.mention, timeCheck()
+        print(thisTime)
+        if isinstance(thisTime, bool):
+            userDB = bot.betCollection.find({"name": user})
+            userPoints = Functions.showPoints(userDB)
             userPoints -= amount
             if user in believePool:
                 text = f"You've chosen your side already {userMention} <:PogO:738917913670582323>"
@@ -304,14 +316,14 @@ class Predictions(commands.Cog):
     async def winner(self, ctx, side: str):
         pool, title, blv, dbt, blvSum, dbtSum = Functions.returnValues(globalDict, believePool, doubtPool)
         blvPercent, dbtPercent = Functions.percentage(believePool, doubtPool, globalDict)
-        if side == "blv":
+        if side == "blv" or "believe":
             giveAmountWon(doubtPool, believePool)
             winnerBlvText = Functions.returnWinText(title, blv, blvPercent, dbtPercent, 'blv', believePool, doubtPool)
             bot.blvPercent, bot.dbtPercent = None, None
             Functions.resetAfterWin(globalDict, believePool, doubtPool)
             await ctx.send(winnerBlvText)
             pass
-        elif side == "dbt":
+        elif side == "dbt" or "doubt":
             giveAmountWon(believePool, doubtPool)
             winnerDbtText = Functions.returnWinText(title, dbt, blvPercent, dbtPercent, 'dbt', believePool, doubtPool)
             bot.blvPercent, bot.dbtPercent = None, None

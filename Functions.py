@@ -73,25 +73,7 @@ def returnWinText(title, Result, blvPercent, dbtPercent, side, believePool, doub
     return winnerText
 
 
-# unused function
-def giveEndTime(globalDict):
-    addTime = globalDict['Time']
-    now = datetime.datetime.now()
-    endTime = now + datetime.timedelta(seconds=addTime)
-    return endTime
-
-
-# basically whenever tries to place a bet it first checks if its past the timer or not, if not then their bets are placed
-def timeCheck(globalDict):
-    now = datetime.datetime.now()
-    endTime = giveEndTime(globalDict)
-    if now < endTime:
-        return True
-    else:
-        return endTime
-
-
-# i want to use this command whenever the timer has ended
+# I want to use this command whenever the timer has ended
 def endText(globalDict, believePool, doubtPool):
     blvPercent, dbtPercent = percentage(globalDict, believePool, doubtPool)
     text = f"> Submissions Closed!: **{globalDict['title']}?**" \
