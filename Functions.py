@@ -5,7 +5,7 @@ import datetime
 # whenever a user bets it sends this text I just added the semantics part just in case someone already had bet
 def userInputPts(user, amount, blvPercent, dbtPercent, side, globalDict, believePool, doubtPool):
     global semantics
-    if user in believePool or user in doubtPool:
+    if user in believePool.items() or user in doubtPool.items():
         semantics = "added"
     else:
         semantics = "entered"
