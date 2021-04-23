@@ -80,23 +80,24 @@ with the given channels. You could copy/paste per channel for each server but th
 '''
 
 
-# STILL NEED TO FIX THIS FUNCTION
-def addPts():
-    vc1, vc2 = bot.get_channel(id=CHANNEL1), bot.get_channel(id=CHANNEL2)
-    if len(vc1.members) > 0:
-        for person in vc1.members:
-            points = random.randint(90, 125)
-            userPoints = Functions.showPoints(bot.betCollection.find({"name": person.name}))
-            bot.betCollection.update_one({"name": person.name}, {"$set": {"points": userPoints + points}})
-    else:
-        pass
-    if len(vc2.members) > 0:
-        for person in vc2.members:
-            points = random.randint(90, 125)
-            userPoints = Functions.showPoints(bot.betCollection.find({"name": person.name}))
-            bot.betCollection.update_one({"name": person.name}, {"$set": {"points": userPoints + points}})
-    else:
-        pass
+# FIXED, now checks thru every guild and vc and if someone is in there they get a random int between 90-125 you can change if you want
+def voiceChannelCheck():
+    vcList = []
+    for guild in bot.guilds:
+        notNeeded, collection = findTheirGuild(guild.name)
+        for channel in guild.voice_channels:
+            vcList.append(channel)
+        for vc in vcList:
+            if len(vc.members) > 0:
+                for person in vc.members:
+                    points = random.randint(90, 125)
+                    userPoints = Functions.showPoints(collection.find({"name": person.name}))
+                    collection.update_one({"name": person.name}, {"$set": {"points": userPoints + points}})
+                print(vc.members)
+            else:
+                pass
+
+
 
 
 '''
@@ -169,7 +170,7 @@ class Bot(commands.Bot):
     async def on_ready(self):
         print(f'Bot has logged in as {bot.user}')
         addGuild()
-        this = Timer(1800, addPts)
+        this = Timer(1800, voiceChannelCheck)
         this.start()
         bot.dbList = listGuild()
 
