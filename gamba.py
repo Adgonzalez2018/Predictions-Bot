@@ -91,7 +91,7 @@ def voiceChannelCheck():
             if len(vc.members) > 0:
                 for person in vc.members:
                     points = random.randint(90, 125)
-                    userPoints = Functions.showPoints(bot.betCollection.find({"name": person.name})) + points
+                    userPoints = Functions.showPoints(collection.find({"name": person.name})) + points
                     collection.update_one({"name": person.name}, {"$set": {"points": userPoints}})
             else:
                 pass
