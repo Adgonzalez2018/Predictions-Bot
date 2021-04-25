@@ -95,6 +95,10 @@ def voiceChannelCheck():
                     collection.update_one({"name": person.name}, {"$set": {"points": userPoints}})
             else:
                 pass
+        vcList = []
+    # restarts the function every 30 min
+    this = Timer(1800, voiceChannelCheck)
+    this.start()
 
 
 
