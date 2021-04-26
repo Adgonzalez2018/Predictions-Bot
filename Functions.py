@@ -1,5 +1,4 @@
 import math
-import datetime
 
 
 # whenever a user bets it sends this text I just added the semantics part just in case someone already had bet
@@ -45,24 +44,22 @@ def percentage(believePool, doubtPool, globalDict):
 
 
 # different from refund as it doesn't give back points from dict to DB it transfers to winner users
-def resetAfterWin(globalDict, believePool, doubtPool):
+def resetAfterWin(globalDict, believePool, doubtPool, payOutPool):
     globalDict.clear()
     believePool.clear()
     doubtPool.clear()
+    payOutPool.clear()
 
 
 # shows title result percentages, biggest payout
-def returnWinText(title, Result, blvPercent, dbtPercent, side, believePool, doubtPool):
-    global winner, maxVal, biggestWinner
+def returnWinText(title, Result, blvPercent, dbtPercent, side, believePool, doubtPool, payOutPool):
+    global winner
+    maxVal = max(payOutPool.values())
+    biggestWinner = max(payOutPool, key=payOutPool.get)
     if side == 'blv':
-        maxVal = max(believePool.values())
-        biggestWinner = max(believePool, key=believePool.get)
         winner = "Believers"
     elif side == 'dbt':
-        maxVal = max(doubtPool.values())
-        biggestWinner = max(doubtPool, key=doubtPool.get)
         winner = "Doubters"
-
     winnerText = f"```autohotkey\n" \
                  f"Prediction Results: {winner} Won!\n" \
                  f"Title: \"{title}?\"\n" \

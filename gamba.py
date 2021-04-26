@@ -9,9 +9,10 @@ import random
 from pymongo import MongoClient
 import math
 import datetime
+
 # global vars
 intents = discord.Intents.all()
-believePool, doubtPool, globalDict, guildMember = {}, {}, {}, {}
+believePool, doubtPool, globalDict, guildMember, payOutPool = {}, {}, {}, {}, {}
 global posts, cluster
 startComDescription = "If the title/blv/dbt is more than one word use \"\". t is the time and is in seconds i.e. t = 120 = 2 minutes (Only admins can use)"
 giveComDescription = "Gives points to specific member, you have to type their discord NAME (Only admins can use)."
@@ -80,7 +81,7 @@ with the given channels. You could copy/paste per channel for each server but th
 '''
 
 
-# FIXED, now checks thru every guild and vc and if someone is in there they get a random int between 90-125 you can change if you want
+# FIXED, now checks through every guild and vc and if someone is in there they get a random int between 90-125 you can change if you want
 def voiceChannelCheck():
     vcList = []
     for guild in bot.guilds:
@@ -101,8 +102,6 @@ def voiceChannelCheck():
     this.start()
 
 
-
-
 '''
 These functions below are used only for refunding, 
 just takes back the points from the dict and adds them back to DB
@@ -118,10 +117,11 @@ def resetAllDicts():
 
 
 def refund_dicts():
+    # refund Believe Pool Points
     for k, v in believePool.items():
         userPoints = Functions.showPoints(bot.betCollection.find({"name": k}))
         bot.betCollection.update_one({"name": k}, {"$set": {"points": userPoints + v}})
-
+    # refund Doubt Pool Points
     for k, v in doubtPool.items():
         userPoints = Functions.showPoints(bot.betCollection.find({"name": k}))
         bot.betCollection.update_one({"name": k}, {"$set": {"points": userPoints + v}})
@@ -143,11 +143,11 @@ def get_members(guild, guildCollection):
 # basically whenever tries to place a bet it first checks if its past the timer or not, if not then their bets are placed
 def timeCheck():
     now = datetime.datetime.now()
-    print(bot.endTime)
     if now < bot.endTime:
         return True
     else:
         return bot.endTime
+
 
 '''
 After every win it calls the bot collection that was set during $start command and gives the user's percentage of the pool + their own amount that they put in.
@@ -167,7 +167,7 @@ def giveAmountWon(loserPool, winnerPool):
         amount = x * loserSum + v
         amount = math.trunc(amount)
         bot.betCollection.update_one({"name": k}, {"$set": {"points": userPoints + amount}})
-        winnerPool[k] = amount
+        payOutPool[k] = amount
 
 
 class Bot(commands.Bot):
@@ -249,8 +249,7 @@ class Predictions(commands.Cog):
                 believePool[user] += amount
                 globalDict['Total'] += amount
                 blvPercent, dbtPercent = Functions.percentage(believePool, doubtPool, globalDict)
-                text = Functions.userInputPts(userMention, amount, blvPercent, dbtPercent, 'blv', globalDict,
-                                              believePool, doubtPool)
+                text = Functions.userInputPts(userMention, amount, blvPercent, dbtPercent, 'blv', globalDict, believePool, doubtPool)
                 bot.betCollection.update_one({"name": user}, {"$set": {"points": userPoints}})
                 await ctx.send(text)
                 pass
@@ -258,8 +257,7 @@ class Predictions(commands.Cog):
                 globalDict['Total'] += amount
                 believePool[user] = amount
                 blvPercent, dbtPercent = Functions.percentage(believePool, doubtPool, globalDict)
-                text = Functions.userInputPts(userMention, amount, blvPercent, dbtPercent, 'blv', globalDict,
-                                              believePool, doubtPool)
+                text = Functions.userInputPts(userMention, amount, blvPercent, dbtPercent, 'blv', globalDict, believePool, doubtPool)
                 bot.betCollection.update_one({"name": user}, {"$set": {"points": userPoints}})
                 await ctx.send(text)
                 pass
@@ -275,7 +273,6 @@ class Predictions(commands.Cog):
     @commands.command(aliases=['doubt', 'dbt'])
     async def betDoubt(self, ctx, amount: int):
         user, userMention, thisTime = ctx.message.author.name, ctx.message.author.mention, timeCheck()
-        print(thisTime)
         if isinstance(thisTime, bool):
             userDB = bot.betCollection.find({"name": user})
             userPoints = Functions.showPoints(userDB)
@@ -322,16 +319,16 @@ class Predictions(commands.Cog):
         blvPercent, dbtPercent = Functions.percentage(believePool, doubtPool, globalDict)
         if side == "blv" or "believe":
             giveAmountWon(doubtPool, believePool)
-            winnerBlvText = Functions.returnWinText(title, blv, blvPercent, dbtPercent, 'blv', believePool, doubtPool)
+            winnerBlvText = Functions.returnWinText(title, blv, blvPercent, dbtPercent, 'blv', believePool, doubtPool, payOutPool)
             bot.blvPercent, bot.dbtPercent = None, None
-            Functions.resetAfterWin(globalDict, believePool, doubtPool)
+            Functions.resetAfterWin(globalDict, believePool, doubtPool, payOutPool)
             await ctx.send(winnerBlvText)
             pass
         elif side == "dbt" or "doubt":
             giveAmountWon(believePool, doubtPool)
-            winnerDbtText = Functions.returnWinText(title, dbt, blvPercent, dbtPercent, 'dbt', believePool, doubtPool)
+            winnerDbtText = Functions.returnWinText(title, dbt, blvPercent, dbtPercent, 'dbt', believePool, doubtPool, payOutPool)
             bot.blvPercent, bot.dbtPercent = None, None
-            Functions.resetAfterWin(globalDict, believePool, doubtPool)
+            Functions.resetAfterWin(globalDict, believePool, doubtPool, payOutPool)
             await ctx.send(winnerDbtText)
             pass
 
@@ -383,7 +380,8 @@ class Points(commands.Cog):
             pass
 
     # I haven't actually considered if they take more than what they have so be aware of that not that important to me at the moment
-    @commands.command(name='take', description="Takes points from specific member, you have to type their discord NAME (Only admins can use).")
+    @commands.command(name='take',
+                      description="Takes points from specific member, you have to type their discord NAME (Only admins can use).")
     @has_permissions(manage_roles=True, ban_members=True)
     async def takePts(self, ctx, take_Member: str, amount: int):
         bot.userDB, bot.userCollection = findTheirGuild(ctx.author.guild.name)
@@ -426,3 +424,5 @@ bot.run(TOKEN)
             memberDict[user] += random.randint(25, 50)
         print(memberDict)
 """
+
+
