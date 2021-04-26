@@ -20,7 +20,8 @@
 
 ![Imageo of Winner Text](https://cdn.discordapp.com/attachments/744656857226018905/833857915894628352/unknown.png)
 
-- `$give/take` --> Param: "member.name", (amount). Allows admins to give/take points from members.  
+- `$give/take` --> Param: "member.name", (amount). Allows admins to give/take points from members. 
+- `$close/stop` --> No Params, closes the submissions before the timer ends. (ends timer early)
 
 ## Regular Members
 - `$believe` --> Param: (Amount). This bets on the "believe" side 
