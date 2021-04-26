@@ -9,7 +9,6 @@ import random
 from pymongo import MongoClient
 import math
 import datetime
-
 # global vars
 intents = discord.Intents.all()
 believePool, doubtPool, globalDict, guildMember, payOutPool = {}, {}, {}, {}, {}
@@ -173,7 +172,7 @@ def giveAmountWon(loserPool, winnerPool):
 class Bot(commands.Bot):
     def __init__(self):
         super(Bot, self).__init__(command_prefix=['$'], intents=intents, case_insensitive=True)
-        self.endTime = None
+        self.Timer, self.endTime, self.startText = None, None, None
         self.blvPercent, self.dbtPercent, self._last_member = None, None, None
         self.predictionDB, self.betCollection = None, None
         self.dbList = []
@@ -198,26 +197,27 @@ class Predictions(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.message = None
+        self.StartMessage = None
 
     @commands.command(aliases=['set'], description=startComDescription)
     @has_permissions(manage_roles=True, ban_members=True)
     async def start(self, ctx, title, t: int, blv, dbt):
         bot.predictionDB, bot.betCollection = findTheirGuild(ctx.author.guild.name)
         globalDict['blv'], globalDict['dbt'] = blv, dbt
-        globalDict['title'], globalDict['Total'], globalDict['Time'] = title, 0, t
+        globalDict['title'], globalDict['Total'] = title, 0
+        bot.Timer = t
         bot.endTime = datetime.datetime.now() + datetime.timedelta(seconds=t)
         minutes, secs = divmod(t, 60)
         timer = '{:02d}:{:02d}'.format(minutes, secs)
         text = Functions.startText(title, blv, dbt, timer)
         message = await ctx.send(text)
-
-        while t >= 0:
-            minutes, secs = divmod(t, 60)
+        while bot.Timer >= 0:
+            minutes, secs = divmod(bot.Timer, 60)
             timer = '{:02d}:{:02d}'.format(minutes, secs)
             time.sleep(1)
-            t -= 1
+            bot.Timer -= 1
             await message.edit(content=Functions.startText(title, blv, dbt, timer))
-        await ctx.send("Submissions have closed")
+        await ctx.invoke(self.bot.get_command('closeSubmissions'))
 
     @start.error
     async def start_error(self, ctx, error):
@@ -315,7 +315,7 @@ class Predictions(commands.Cog):
     @commands.command(name='won', description=wonComDescription)
     @has_permissions(manage_roles=True, ban_members=True)
     async def winner(self, ctx, side: str):
-        pool, title, blv, dbt, blvSum, dbtSum = Functions.returnValues(globalDict, believePool, doubtPool)
+        pool, title, blv, dbt, blvSum, dbtSum = Functions.returnValues(believePool, doubtPool, globalDict)
         blvPercent, dbtPercent = Functions.percentage(believePool, doubtPool, globalDict)
         if side == "blv" or "believe":
             giveAmountWon(doubtPool, believePool)
@@ -353,6 +353,18 @@ class Predictions(commands.Cog):
             text = f"Sorry {ctx.message.author.mention}, you do not have permissions to do that! <:davidCD:805202027848007770>"
             await ctx.send(ctx.message.channel, text)
 
+    @commands.command(aliases=['close', 'stop'])
+    @has_permissions(manage_roles=True, ban_members=True)
+    async def closeSubmissions(self, ctx):
+        endText = Functions.endText(believePool, doubtPool, globalDict)
+        if bot.Timer == 0:
+            await ctx.send(endText)
+        else:
+            bot.endTime = bot.endTime - datetime.timedelta(seconds=bot.Timer)
+            bot.Timer = 0
+            await ctx.send(endText)
+        bot.endTime, bot.Timer = None, None
+
 
 # this cog basically displays points, takes and gives
 class Points(commands.Cog):
@@ -380,8 +392,7 @@ class Points(commands.Cog):
             pass
 
     # I haven't actually considered if they take more than what they have so be aware of that not that important to me at the moment
-    @commands.command(name='take',
-                      description="Takes points from specific member, you have to type their discord NAME (Only admins can use).")
+    @commands.command(name='take', description="Takes points from specific member, you have to type their discord NAME (Only admins can use).")
     @has_permissions(manage_roles=True, ban_members=True)
     async def takePts(self, ctx, take_Member: str, amount: int):
         bot.userDB, bot.userCollection = findTheirGuild(ctx.author.guild.name)

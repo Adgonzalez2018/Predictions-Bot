@@ -23,7 +23,7 @@ def startText(title, blv, dbt, timer):
 
 # there are a lot of values to be summoned for the win command so I decided to make a function for a one liner
 # makes it simpler
-def returnValues(globalDict, believePool, doubtPool):
+def returnValues(believePool, doubtPool, globalDict):
     pool, title = globalDict['Total'], globalDict['title']
     blv, dbt = globalDict['blv'], globalDict['dbt']
     blvSum, dbtSum = sum(believePool.values()), sum(doubtPool.values())
@@ -71,9 +71,9 @@ def returnWinText(title, Result, blvPercent, dbtPercent, side, believePool, doub
 
 
 # I want to use this command whenever the timer has ended
-def endText(globalDict, believePool, doubtPool):
-    blvPercent, dbtPercent = percentage(globalDict, believePool, doubtPool)
-    text = f"> Submissions Closed!: **{globalDict['title']}?**" \
+def endText(believePool, doubtPool, globalDict):
+    blvPercent, dbtPercent = percentage(believePool, doubtPool, globalDict)
+    text = f"> Submissions Closed!: **{globalDict['title']}?**\n" \
            f"```autohotkey\n" \
            f"Total Pool: {globalDict['Total']} points\n" \
            f"Blv Percent/People/Amount: {blvPercent}%, {len(believePool)}, {sum(believePool.values())}\n" \
