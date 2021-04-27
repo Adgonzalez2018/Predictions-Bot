@@ -365,6 +365,12 @@ class Predictions(commands.Cog):
             await ctx.send(endText)
         bot.endTime, bot.Timer = None, None
 
+    @closeSubmissions.error
+    async def close_error(self, ctx, error):
+        if isinstance(error, MissingPermissions):
+            text = f"Sorry {ctx.message.author.mention}, you do not have permissions to do that! <:davidCD:805202027848007770>"
+            await ctx.send(ctx.message.channel, text)
+
 
 # this cog basically displays points, takes and gives
 class Points(commands.Cog):
